@@ -7,16 +7,32 @@
     <script type="module">
       import { io } from "https://cdn.socket.io/4.7.5/socket.io.esm.min.js";
 
-      const socket = io({ auth: { serverOffset: 0 } });
+      const getUser = async () => {
+        const user = localStorage.getItem("chat:user");
+        if (user) return user;
+
+        const res = await fetch(
+          "https://random-data-api.com/api/users/random_user"
+        );
+        const { username } = await res.json();
+        localStorage.setItem("chat:user", username);
+        return username;
+      };
+
+      const socket = io({ auth: { serverOffset: 0, user: await getUser() } });
 
       const form = document.getElementById("form");
       const input = document.getElementById("input");
       const messages = document.getElementById("messages");
 
-      socket.on("chat message", (msg, serverOffset) => {
-        const item = `<li>${msg}</li>`;
+      socket.on("chat message", (msg, serverOffset, user) => {
+        const item = `<li>
+          <p>${msg}</p>
+          <span>${user}</span>
+          </li>`;
         messages.insertAdjacentHTML("beforeend", item);
         socket.auth.serverOffset = serverOffset;
+        messages.scrollTop = messages.scrollHeight;
       });
 
       form.addEventListener("submit", (e) => {
@@ -92,6 +108,16 @@
 
       #form > button:hover {
         background: #0cf;
+      }
+
+      #messages {
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        padding-bottom: 48px;
+        overflow-y: scroll;
+        scroll-behavior: smooth;
       }
     </style>
   </head>
